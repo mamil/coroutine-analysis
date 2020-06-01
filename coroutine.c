@@ -17,19 +17,19 @@
 
 struct coroutine;
 
-struct schedule {
+struct schedule { // 调度器
 	char stack[STACK_SIZE];
 	ucontext_t main;
-	int nco;
-	int cap;
+	int nco; // 控制的协程数量
+	int cap; // 最大可控制的协程数量
 	int running;
-	struct coroutine **co;
+	struct coroutine **co; // 指向自己控制的协程
 };
 
-struct coroutine {
+struct coroutine { // 协程信息
 	coroutine_func func;
 	void *ud;
-	ucontext_t ctx;
+	ucontext_t ctx; // 上下文，最重要就在这里了
 	struct schedule * sch;
 	ptrdiff_t cap;
 	ptrdiff_t size;
@@ -57,7 +57,7 @@ _co_delete(struct coroutine *co) {
 }
 
 struct schedule * 
-coroutine_open(void) {
+coroutine_open(void) { // 初始化一个调度器
 	struct schedule *S = malloc(sizeof(*S));
 	S->nco = 0;
 	S->cap = DEFAULT_COROUTINE;
@@ -84,9 +84,9 @@ coroutine_close(struct schedule *S) {
 int 
 coroutine_new(struct schedule *S, coroutine_func func, void *ud) {
 	struct coroutine *co = _co_new(S, func , ud);
-	if (S->nco >= S->cap) {
+	if (S->nco >= S->cap) { // 开的协程超过预期，开始扩容
 		int id = S->cap;
-		S->co = realloc(S->co, S->cap * 2 * sizeof(struct coroutine *));
+		S->co = realloc(S->co, S->cap * 2 * sizeof(struct coroutine *)); // 扩容成2倍大小
 		memset(S->co + S->cap , 0 , sizeof(struct coroutine *) * S->cap);
 		S->co[S->cap] = co;
 		S->cap *= 2;
